@@ -1,7 +1,7 @@
 # FECR-php
 Libraries, classes and methods for generating, signing and submitting electronic invoice using Hacienda API v4.3 Costa Rica.
 
-I use these code in production in a software I built for travel agencies (see more here www.crtouroperator.com).
+I use this code in production in a software I built for travel agencies (see more here www.crtouroperator.com).
 All I'm sharing are the libraries, classes and methods for the functionality listed above, you need to develop your own UIs, your own DB schema, basically your own software, these libraries however, will make your life much easier by not having to care much about the underlying structure of the XML (all classes here are based on PHP standard classes and objects), I'm also including the methods for signing the XML using your own cryptographic key as provided by Hacienda (no support for digital signature yet although I suspect it wouldn't be much different).
 
 Basically, just include the files in your PHP project and start using them as you would any other library.
@@ -33,6 +33,7 @@ You need to know a little bit about the order of things though, and here I will 
 - I'm including an ISO 4217 currency codes library in case you find it useful.
 - For getting the list of provinces, cantons, districts I'm using an external [API service](https://programando.paginasweb.cr/2016/04/29/lista-de-provincias-cantones-y-distritos-de-costa-rica-en-formato-json/), if you don't want to use it don't use the getters from UbicacionType class.
 - All classes were embedded in the FECR namespace to prevent collisions.
+- I'm using the PHP session for storing authentication values, all $_SESSION parameters include the prefix idp_ so they don't mess with other variables you may have, it is recommended that you first start your session before calling any of the functionality from these libraries.
 
 ## FAQs
 - Why write this in English?
@@ -61,8 +62,6 @@ Yes, if you wanted a service write it yourself, there's plenty of examples and t
 Finally! Yes, sorry for all the bs above. Here's the quick demo, from this code and on you can probably deduce the rest of the functionality.
 
 ```
-//Notice I'm assuming this is running behind a web server like Apache but that is not a requirement, copy/paste and modify.
-
 require_once './FECR_APIHacienda.php';
 require_once './FECR_Classes.php';
 require_once './FECR_Xades.php';
@@ -210,4 +209,5 @@ And that's it, as simple as that. Ain't it pretty?
 Now get coding, and if you really like this write me or send me a paycheck (even better! accepting paypal and SINPE :))
 
 Enjoy!
+
 Sergio
