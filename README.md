@@ -1,6 +1,8 @@
 # FECR-php
 Libraries, classes and methods for generating, signing and submitting electronic invoice using Hacienda API v4.3 Costa Rica.
 
+**_I'm still updating this code to make it v4.3 compatible, I will update this readme once I think the code is ready, in the meantime use it as a preview_**
+
 I use this code in production in a software I built for travel agencies (see more here www.crtouroperator.com).
 All I'm sharing are the libraries, classes and methods for the functionality listed above, you need to develop your own UIs, your own DB schema, basically your own software, these libraries however, will make your life much easier by not having to care much about the underlying structure of the XML (all classes here are based on PHP standard classes and objects), I'm also including the methods for signing the XML using your own cryptographic key as provided by Hacienda (no support for digital signature yet although I suspect it wouldn't be much different).
 
@@ -11,6 +13,7 @@ You need to know a little bit about the order of things though, and here I will 
 - I started this project on FE v4.2 but later updated it to v4.3 of electronic invoice, I'm based on the structures defined at the [official site of hacienda](https://www.hacienda.go.cr/ATV/ComprobanteElectronico/frmAnexosyEstructuras.aspx), I strongly recommend you take a look at it in case you haven't.
 - Familiarize yourself with the two most important (and only really) endpoints from the API, check [Swagger](https://www.hacienda.go.cr/ATV/ComprobanteElectronico/docs/esquemas/2016/v4.1/comprobantes-electronicos-api.html), the libraries here will perform all the connections for you but you still need to know what's on the back, also in case those endpoints change you might want to update the URLs.
 - Register your account on the ATV (Administracion Tributaria Virtual) site of [Hacienda](https://www.hacienda.go.cr/ATV/Login.aspx), you'll need it to get your API user, secret and crypto key.
+- Read the text from the [Fiscal Reform](http://www.pgrweb.go.cr/scij/Busqueda/Normativa/Normas/nrm_texto_completo.aspx?nValor1=1&nValor2=87720), or at least the pieces related to the taxes of the activities you will be covering with yoru software.
 - Even though Hacienda claims their API can handle up to 1000 requests per second and will auto scale when needed I sincerely believe their implementation just s*cks, cause the number of errors I have hit against so far from their end is just ridiculous, and the Staging API is way worse, at some points is even completely useless, but hey, is what you got and we still need to test against it, unless you want to mess with them and generate invoices just to void them with credit notes for your testing. Anyway, I just mention this because for this same reason is that I'm trying to add as much validation to the XML generation as possible (it's still lacking though) to prevent failures, and you should do the same.
 - Check out this site, super valuable and strongly recommended https://apis.gometa.org/
 - Write your code considering always that you will be 100% of the time in contingency mode, Hacienda API is so unstable that this may very well be the truth. So, implement retry mechanisms, scheduled resend jobs, etc. Save your invoices so that the XML can be recreated at any point and always save the final generated XML and all Hacienda responses (it's required by the law anyway).
@@ -26,7 +29,8 @@ You need to know a little bit about the order of things though, and here I will 
 - Yes, there's a spanglish mix in the code because I'm using the literal attribute names from the XML in the class models, no transformations or transliterations of any kind in order to make it clearer (I hate it when people change names and is not clear enough whether you're referencing the same things or not).
 
 ### Other notes
-- I took some pieces of code from other github projects like CRLibre (thank you!), mainly the XML signature piece because it was so complicated, I know that some people don't like this signing method (hardcoding tags and labels) but it works fine so, whatever, there are some other signers written in Java and .Net that you can use if you feel like so (look somewhere else).
+- A big thanks to the guys from CRLibre, their [github](https://github.com/CRLibre/API_Hacienda) and [Facebook](https://www.facebook.com/CRLibre.org/) community has been a great reference.
+- Kudos to Enzo Jimenez as well for his [signer](https://github.com/enzojimenez/hacienda-firmador-php?fbclid=IwAR3kOZ0Y_6qyYDoSkaPpqdfHZ3jQWYbjYj8YeHoDZd11GxVSXiukJSpOTa8) which I'm copying on this repo as well.
 - Some methods were designed to throw Exceptions, so expect them, wrap your code in try/catches and so.
 - I use Apache Netbeans on Linux, not like it changes anything but incase you were wondering, I just can't live without code auto-completion.
 - Feel free to explore the code, I've included some comment tags especially for public methods but not for everything, if something is too obscure is probably cause it just works and I didn't care (don't judge me :D)
@@ -56,6 +60,7 @@ Yes, if you wanted a service write it yourself, there's plenty of examples and t
 - php-curl
 - php-openssl
 - php-xml
+- xmlseclibs (included)
 - Anything else?
 
 # Getting Started
