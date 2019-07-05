@@ -78,7 +78,7 @@ function defaultLogger($msg, $mode) {
         case IDP::INFO: $level = "INFO";
             break;
     }
-    echo date("Y-m-d H:i:s") . " $level $msg\n";
+    //echo date("Y-m-d H:i:s") . " $level $msg\n";  //uncomment if this is what you want
 }
 
 class APIHacienda {
