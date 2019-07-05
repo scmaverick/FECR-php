@@ -253,6 +253,9 @@ class ReceptorType {
         } else {
             $this->Ubicacion->process();   
         }
+        if (empty($this->OtrasSenasExtranjero)) {
+            unset($this->OtrasSenasExtranjero);
+        }
         if (empty($this->Telefono)) {
             unset($this->Telefono);
         } else {
@@ -322,7 +325,7 @@ class ImpuestoType {
      * Default '01' impuesto al valor agregado.
      * @var char(2)
      */
-    public $Codigo = "01";
+    public $Codigo = "07";
     
     const EXENTO = "01";  //01 Tarifa 0% (Exento)
     const REDUCED1 = "02";  //Tarifa Reducida 1%
@@ -352,7 +355,8 @@ class ImpuestoType {
      * @param type $codigoTarifa
      * @param type $monto
      */
-    public function __construct($codigoTarifa = ImpuestoType::EXENTO, $monto = 0) {
+    public function __construct($codigo = ImpuestoType::SERVICIOS, $codigoTarifa = ImpuestoType::EXENTO, $monto = 0) {
+        $this->Codigo = $codigo;
         $this->CodigoTarifa = $codigoTarifa;
         $this->Tarifa = $this->getTarifa($codigoTarifa);
         $this->Monto = $monto;
@@ -379,10 +383,10 @@ class ImpuestoType {
     
     public function process() {
         if (empty($this->Codigo) || strlen($this->Codigo) != 2) {
-            throw new \Exception("Invalid Codigo");
+            throw new \Exception("Invalid Codigo: $this->Codigo");
         }
         if (empty($this->CodigoTarifa) || strlen($this->CodigoTarifa) != 2) {
-            throw new \Exception("Invalid CodigoTarifa");
+            throw new \Exception("Invalid CodigoTarifa: $this->CodigoTarifa");
         }
         $this->Tarifa = $this->getTarifa($this->CodigoTarifa);  //make sure tarifa matches codigoTarifa
         if (empty($this->FactorIVA)) {
@@ -563,9 +567,19 @@ class ResumenFactura {
     public $TotalOtrosCargos = 0;
     public $TotalComprobante = 0;
     
-    public function process() {
+    /**
+     * 
+     * @param type $hasTaxedMerchandise 
+     * @param type $hasTaxedServices
+     */
+    public function process($hasTaxedMerchandise = false, $hasTaxedServices = false) {
         $props = get_object_vars($this);
         foreach($props as $propName => $val) {
+            if (($hasTaxedMerchandise && $propName === "TotalMercanciasGravadas") ||
+                ($hasTaxedServices && $propName === "TotalServGravados") ||
+                (($hasTaxedMerchandise || $hasTaxedServices) && $propName === "TotalGravado")) {  //Define this attributes even if their values are 0.0
+                continue;
+            }
             if (empty($this->$propName)) {
                 unset($this->$propName);
             }
@@ -772,6 +786,8 @@ class FacturaElectronica {
         }
         
         $linNum = 1;
+        $hasTaxedServices = false;
+        $hasTaxedMerchandise = false;
         if (is_array($this->DetalleServicio) && count($this->DetalleServicio) > 0) {
             $DetalleServicio = [];
             foreach($this->DetalleServicio as $det) {
@@ -782,18 +798,15 @@ class FacturaElectronica {
                     $this->ResumenFactura->TotalDescuentos += $det->Descuento->MontoDescuento;
                 }
                 if (isset($det->Impuesto) && $det->Impuesto != null) {
-                    if ($det->UnidadMedida == "Sp") {
-                        if ($det->Impuesto->Tarifa == 0) {
-                            $this->ResumenFactura->TotalServExentos += $det->SubTotal;
-                        } else {
-                            $this->ResumenFactura->TotalServGravados += $det->SubTotal;
-                        }
-                    } else {
-                        if ($det->Impuesto->Tarifa == 0) {
-                            $this->ResumenFactura->TotalMercanciasExentas += $det->SubTotal;
-                        } else {
-                            $this->ResumenFactura->TotalMercanciasGravadas += $det->SubTotal;
-                        }
+                    if (empty($det->BaseImponible)) {
+                        $det->BaseImponible = $det->SubTotal;
+                    }
+                    if ($det->UnidadMedida == "Sp") {  //services
+                        $hasTaxedServices = true;
+                        $this->ResumenFactura->TotalServGravados += $det->MontoTotal;
+                    } else {  //merchandise
+                        $hasTaxedMerchandise = true;
+                        $this->ResumenFactura->TotalMercanciasGravadas += $det->MontoTotal;
                     }
                     $this->ResumenFactura->TotalImpuesto += $det->Impuesto->Monto;
                 } else {
@@ -815,7 +828,7 @@ class FacturaElectronica {
         $this->ResumenFactura->TotalVentaNeta = $this->ResumenFactura->TotalVenta - $this->ResumenFactura->TotalDescuentos;
         $this->ResumenFactura->TotalComprobante = $this->ResumenFactura->TotalVentaNeta + $this->ResumenFactura->TotalImpuesto;
         
-        $this->ResumenFactura->process();
+        $this->ResumenFactura->process($hasTaxedMerchandise, $hasTaxedServices);
         
         if ($this->CondicionVenta != "02") {  //not credit
             unset($this->PlazoCredito);
@@ -850,23 +863,10 @@ class FacturaElectronicaExportacion extends FacturaElectronica {
     //No differences
 }
 
-class Normativa {
-    public $NumeroResolucion = "DGT-R-13-2017";
-    public $FechaResolucion = "20-02-2017 08:05:00";
-}
-
 class NotaCreditoElectronica extends FacturaElectronica {
-    
-    /**
-     *
-     * @var Normativa
-     */
-    public $Normativa;
     
     public function __construct() {
         parent::__construct();
-        $this->Normativa = new Normativa();
-        //Small hack to ensure Normativa is added before Otros to match the XML format
         $Otros = $this->Otros;
         unset($this->Otros);
         $this->Otros = $Otros;
@@ -875,16 +875,9 @@ class NotaCreditoElectronica extends FacturaElectronica {
 }
 
 class FacturaElectronicaCompra extends FacturaElectronica {
-    /**
-     *
-     * @var Normativa
-     */
-    public $Normativa;
     
     public function __construct() {
         parent::__construct();
-        $this->Normativa = new Normativa();
-        //Small hack to ensure Normativa is added before Otros to match the XML format
         $Otros = $this->Otros;
         unset($this->Otros);
         $this->Otros = $Otros;
@@ -953,6 +946,18 @@ class MensajeReceptor {
     public $NumeroConsecutivoReceptor;
     
     public function process() {
+        if (empty($this->MontoTotalDeGastoAplicable)) {
+            unset($this->MontoTotalDeGastoAplicable);
+        }
+        if (empty($this->MontoTotalImpuestoAcreditar)) {
+            unset($this->MontoTotalImpuestoAcreditar);
+        }
+        if (empty($this->CondicionImpuesto)) {
+            unset($this->CondicionImpuesto);
+        }
+        if (empty($this->CodigoActividad)) {
+            unset($this->CodigoActividad);
+        }
         if (empty($this->MontoTotalImpuesto)) {
             unset($this->MontoTotalImpuesto);
         }
