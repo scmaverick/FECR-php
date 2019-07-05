@@ -1,7 +1,7 @@
 # FECR-php
 Libraries, classes and methods for generating, signing and submitting electronic invoice using Hacienda API v4.3 Costa Rica.
 
-**_I'm still updating this code to make it v4.3 compatible, I will update this readme once I think the code is ready, in the meantime use it as a preview_**
+**_Code ready for PROD_**
 
 I use this code in production in a software I built for travel agencies (see more here www.crtouroperator.com).
 All I'm sharing are the libraries, classes and methods for the functionality listed above, you need to develop your own UIs, your own DB schema, basically your own software, these libraries however, will make your life much easier by not having to care much about the underlying structure of the XML (all classes here are based on PHP standard classes and objects), I'm also including the methods for signing the XML using your own cryptographic key as provided by Hacienda (no support for digital signature yet although I suspect it wouldn't be much different).
@@ -179,7 +179,7 @@ if (isset($_GET["enviar"])) {
 	//Sign XML invoice
 	try {
 		$fe = new FirmadorCR();
-		$signedXML = $fe->firmar($certFile, $certKey, $unsignedXML);  //And request the class to sign your XML with your crypto key
+		$signedXML = $fe->firmarXml($certFile, $certKey, $unsignedXML);  //And request the class to sign your XML with your crypto key
 	} catch (\Exception $ex) {
 		die("<b><b>Error signing XML: " . $ex);
 	}
